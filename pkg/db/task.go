@@ -4,6 +4,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"strconv"
 	"time"
 )
 
@@ -78,11 +79,15 @@ func Tasks(limit int, search string) ([]*Task, error) {
 	return tasks, rows.Err()
 }
 
-// GetTask возвращает задачу по ID
-func GetTask(id string) (*Task, error) {
+func GetTask(idStr string) (*Task, error) {
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return nil, errors.New("invalid id format")
+	}
+
 	var task Task
 	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`
-	err := DB.QueryRow(query, id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	err = DB.QueryRow(query, id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("task not found")

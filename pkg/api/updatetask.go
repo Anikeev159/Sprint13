@@ -15,7 +15,7 @@ func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if task.ID == "" {
+	if task.ID == "0" {
 		writeJSON(w, map[string]string{"error": "id is required"})
 		return
 	}

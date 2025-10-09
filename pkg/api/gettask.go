@@ -20,7 +20,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := db.DB.GetTask(id)
+	task, err := db.GetTask(id)
 	if err != nil {
 		writeJSON(w, map[string]string{"error": "task not found"})
 		return

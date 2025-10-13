@@ -3,39 +3,40 @@ package api
 
 import (
 	"encoding/json"
-	"go-final-project/pkg/db"
 	"net/http"
+
+	"go-final-project/pkg/api"
+	"go-final-project/pkg/db"
 )
 
-// addTaskHandler — обработчик POST /api/task
 func addTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var task db.Task
 
-	// Десериализация JSON
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeJSON(w, map[string]string{"error": "invalid JSON"})
+		api.WriteJSON(w, map[string]string{"error": "invalid JSON"}, http.StatusBadRequest)
 		return
 	}
 
-	// Проверка обязательного поля
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "title is required"})
+		api.WriteJSON(w, map[string]string{"error": "title is required"}, http.StatusBadRequest)
 		return
 	}
 
-	// Проверка и коррекция даты
 	if err := checkDate(&task); err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		api.WriteJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
 		return
 	}
 
-	// Добавление в БД
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "database error"})
+		api.WriteJSON(w, map[string]string{"error": "database error"}, http.StatusInternalServerError)
 		return
 	}
 
-	// Ответ: {"id": "123"}
-	writeJSON(w, map[string]int64{"id": id})
+	api.WriteJSON(w, map[string]int64{"id": id}, http.StatusCreated)
 }

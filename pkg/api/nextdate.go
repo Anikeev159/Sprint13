@@ -32,6 +32,7 @@ func AfterNow(date time.Time, now time.Time) bool {
 
 // NextDate вычисляет следующую дату по правилу повторения
 func NextDate(now time.Time, dstart string, repeat string) (string, error) {
+
 	if repeat == "" {
 		return "", errors.New("repeat is empty")
 	}
@@ -78,7 +79,11 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 
 // nextDateHandler — обработчик /api/nextdate
 func nextDateHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем параметры
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")
 	repeatStr := r.FormValue("repeat")
@@ -88,7 +93,6 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Определяем now
 	var now time.Time
 	if nowStr == "" {
 		now = time.Now()
@@ -101,7 +105,6 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 		now = parsed
 	}
 
-	// Вычисляем следующую дату
 	result, err := NextDate(now, dateStr, repeatStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

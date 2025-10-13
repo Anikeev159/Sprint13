@@ -17,7 +17,6 @@ func tasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Ограничиваем 50 задачами
 	limit := 50
-
 	// Получаем задачи из БД
 	tasks, err := db.Tasks(limit, search)
 	if err != nil {

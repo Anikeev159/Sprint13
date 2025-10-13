@@ -46,7 +46,7 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		} else {
 			// Это текст → ищем по title и comment
 			query = `SELECT id, date, title, comment, repeat FROM scheduler 
-                     WHERE title LIKE ? OR comment LIKE ? 
+			 WHERE title LIKE ? OR comment LIKE ? 
                      ORDER BY date ASC LIMIT ?`
 			searchPattern := "%" + search + "%"
 			args = []interface{}{searchPattern, searchPattern, limit}

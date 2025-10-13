@@ -10,23 +10,23 @@ import (
 func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "id is required"})
+		WriteJSON(w, map[string]string{"error": "id is required"}, http.StatusBadRequest)
 		return
 	}
 
 	// Проверяем, что id — число (опционально, но безопасно)
 	if _, err := strconv.Atoi(id); err != nil {
-		writeJSON(w, map[string]string{"error": "invalid id format"})
+		WriteJSON(w, map[string]string{"error": "invalid id format"}, http.StatusBadRequest)
 		return
 	}
 
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "task not found"})
+		WriteJSON(w, map[string]string{"error": "task not found"}, http.StatusNotFound)
 		return
 	}
 
-	writeJSON(w, task)
+	WriteJSON(w, task, http.StatusOK)
 }
 
 //dasd

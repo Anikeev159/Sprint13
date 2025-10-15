@@ -14,20 +14,8 @@ type TasksResp struct {
 }
 
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
-<<<<<<< HEAD
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-=======
-	// Получаем параметр search
-	search := r.FormValue("search")
-
-	// Ограничиваем 50 задачами
-	limit := 50
-	// Получаем задачи из БД
-	tasks, err := db.Tasks(limit, search)
-	if err != nil {
-		writeJSON(w, map[string]string{"error": "database error"})
->>>>>>> 246564f55ef46378affc64b1c8dc75b4b0d31cd3
 		return
 	}
 

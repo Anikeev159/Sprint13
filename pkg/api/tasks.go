@@ -2,33 +2,31 @@
 package api
 
 import (
-	"encoding/json"
-	"go-final-project/pkg/db"
 	"net/http"
+
+	"go-final-project/pkg/db"
 )
+
+const maxTasks = 50
 
 type TasksResp struct {
 	Tasks []*db.Task `json:"tasks"`
 }
 
 func tasksHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем параметр search
-	search := r.FormValue("search")
-
-	// Ограничиваем 50 задачами
-	limit := 50
-
-	// Получаем задачи из БД
-	tasks, err := db.Tasks(limit, search)
-	if err != nil {
-		writeJSON(w, map[string]string{"error": "database error"})
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	writeJSON(w, TasksResp{Tasks: tasks})
-}
+	search := r.FormValue("search")
+	limit := maxTasks
 
-func writeJSON(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	json.NewEncoder(w).Encode(data)
+	tasks, err := db.Tasks(limit, search)
+	if err != nil {
+		WriteJSON(w, map[string]string{"error": "database error"}, http.StatusInternalServerError)
+		return
+	}
+
+	WriteJSON(w, TasksResp{Tasks: tasks}, http.StatusOK)
 }

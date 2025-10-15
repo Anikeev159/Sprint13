@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const dateFormat = "20060102"
+
 type Task struct {
 	ID      string `json:"id"`
 	Date    string `json:"date"`
@@ -26,25 +28,19 @@ func AddTask(task *Task) (int64, error) {
 	return res.LastInsertId()
 }
 
-// Tasks возвращает список задач (максимум limit штук)
-// Если search не пустой — ищет по title/comment или по дате
 func Tasks(limit int, search string) ([]*Task, error) {
 	var query string
 	var args []interface{}
 
 	if search == "" {
-		// Без поиска
 		query = `SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT ?`
 		args = []interface{}{limit}
 	} else {
-		// Проверяем, является ли search датой в формате DD.MM.YYYY
 		if parsedDate, err := time.Parse("02.01.2006", search); err == nil {
-			// Это дата → ищем по полю date
-			dateStr := parsedDate.Format("20060102")
+			dateStr := parsedDate.Format(dateFormat)
 			query = `SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? ORDER BY date ASC LIMIT ?`
 			args = []interface{}{dateStr, limit}
 		} else {
-			// Это текст → ищем по title и comment
 			query = `SELECT id, date, title, comment, repeat FROM scheduler 
                      WHERE title LIKE ? OR comment LIKE ? 
                      ORDER BY date ASC LIMIT ?`
@@ -62,7 +58,6 @@ func Tasks(limit int, search string) ([]*Task, error) {
 	var tasks []*Task
 	for rows.Next() {
 		var t Task
-		// Все поля — строки
 		var idStr string
 		err := rows.Scan(&idStr, &t.Date, &t.Title, &t.Comment, &t.Repeat)
 		if err != nil {
@@ -72,11 +67,15 @@ func Tasks(limit int, search string) ([]*Task, error) {
 		tasks = append(tasks, &t)
 	}
 
-	if tasks == nil {
-		tasks = []*Task{} // чтобы избежать {"tasks":null}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return tasks, rows.Err()
+	if tasks == nil {
+		tasks = []*Task{}
+	}
+
+	return tasks, nil
 }
 
 func GetTask(idStr string) (*Task, error) {

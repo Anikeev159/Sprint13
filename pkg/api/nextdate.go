@@ -4,6 +4,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,74 +12,12 @@ import (
 
 const dateFormat = "20060102"
 
-// afterNow возвращает true, если date > now (только дата, без времени)
-func AfterNow(date time.Time, now time.Time) bool {
-	y1, m1, d1 := date.Date()
-	y2, m2, d2 := now.Date()
-	if y1 > y2 {
-		return true
-	}
-	if y1 < y2 {
-		return false
-	}
-	if m1 > m2 {
-		return true
-	}
-	if m1 < m2 {
-		return false
-	}
-	return d1 > d2
-}
-
-// NextDate вычисляет следующую дату по правилу повторения
-func NextDate(now time.Time, dstart string, repeat string) (string, error) {
-	if repeat == "" {
-		return "", errors.New("repeat is empty")
-	}
-
-	// Парсим начальную дату
-	start, err := time.Parse(dateFormat, dstart)
-	if err != nil {
-		return "", errors.New("invalid dstart format")
-	}
-
-	parts := strings.Split(repeat, " ")
-	switch parts[0] {
-	case "y":
-		// Ежегодно
-		if len(parts) != 1 {
-			return "", errors.New("invalid 'y' format")
-		}
-		next := start
-		for !AfterNow(next, now) {
-			next = next.AddDate(1, 0, 0)
-		}
-		return next.Format(dateFormat), nil
-
-	case "d":
-		// Повтор каждые N дней
-		if len(parts) != 2 {
-			return "", errors.New("invalid 'd' format: missing number")
-		}
-		days, err := strconv.Atoi(parts[1])
-		if err != nil || days <= 0 || days > 400 {
-			return "", errors.New("invalid day interval: must be 1-400")
-		}
-		next := start
-		for !AfterNow(next, now) {
-			next = next.AddDate(0, 0, days)
-		}
-		return next.Format(dateFormat), nil
-
-	default:
-		// Пока не поддерживаем w и m
-		return "", errors.New("unsupported repeat rule")
-	}
-}
-
-// nextDateHandler — обработчик /api/nextdate
 func nextDateHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем параметры
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	nowStr := r.FormValue("now")
 	dateStr := r.FormValue("date")
 	repeatStr := r.FormValue("repeat")
@@ -88,10 +27,18 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Определяем now
 	var now time.Time
 	if nowStr == "" {
-		now = time.Now()
+		// Получаем now из переменной окружения (как в тестах)
+		if envNow := os.Getenv("TODO_NOW"); envNow != "" {
+			if t, err := time.Parse(dateFormat, envNow); err == nil {
+				now = t
+			} else {
+				now = time.Now()
+			}
+		} else {
+			now = time.Now()
+		}
 	} else {
 		parsed, err := time.Parse(dateFormat, nowStr)
 		if err != nil {
@@ -101,7 +48,6 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 		now = parsed
 	}
 
-	// Вычисляем следующую дату
 	result, err := NextDate(now, dateStr, repeatStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -110,4 +56,45 @@ func nextDateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(result))
+}
+
+func NextDate(now time.Time, dstart string, repeat string) (string, error) {
+	if repeat == "" {
+		return "", errors.New("repeat is empty")
+	}
+
+	start, err := time.Parse(dateFormat, dstart)
+	if err != nil {
+		return "", errors.New("invalid dstart format")
+	}
+
+	parts := strings.Split(repeat, " ")
+	switch parts[0] {
+	case "y":
+		if len(parts) != 1 {
+			return "", errors.New("invalid 'y' format")
+		}
+		next := start
+		for !next.After(now) {
+			next = next.AddDate(1, 0, 0)
+		}
+		return next.Format(dateFormat), nil
+
+	case "d":
+		if len(parts) != 2 {
+			return "", errors.New("invalid 'd' format")
+		}
+		days, err := strconv.Atoi(parts[1])
+		if err != nil || days <= 0 || days > 400 {
+			return "", errors.New("invalid day interval")
+		}
+		next := start
+		for !next.After(now) {
+			next = next.AddDate(0, 0, days)
+		}
+		return next.Format(dateFormat), nil
+
+	default:
+		return "", errors.New("unsupported repeat rule")
+	}
 }

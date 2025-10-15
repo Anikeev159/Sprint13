@@ -2,21 +2,27 @@
 package api
 
 import (
-	"go-final-project/pkg/db"
 	"net/http"
+
+	"go-final-project/pkg/db"
 )
 
 func deleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	id := r.FormValue("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "id is required"})
+		WriteJSON(w, map[string]string{"error": "id is required"}, http.StatusBadRequest)
 		return
 	}
 
 	if err := db.DeleteTask(id); err != nil {
-		writeJSON(w, map[string]string{"error": "task not found"})
+		WriteJSON(w, map[string]string{"error": "task not found"}, http.StatusNotFound)
 		return
 	}
 
-	writeJSON(w, map[string]interface{}{})
+	WriteJSON(w, map[string]interface{}{}, http.StatusOK)
 }

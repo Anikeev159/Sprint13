@@ -3,39 +3,43 @@ package api
 
 import (
 	"encoding/json"
-	"go-final-project/pkg/db"
 	"net/http"
+
+	"go-final-project/pkg/db"
 )
 
 func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
-	var task db.Task
-
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		writeJSON(w, map[string]string{"error": "invalid JSON"})
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	if task.ID == "0" {
-		writeJSON(w, map[string]string{"error": "id is required"})
+	var task db.Task
+
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		WriteJSON(w, map[string]string{"error": "invalid JSON"}, http.StatusBadRequest)
+		return
+	}
+
+	if task.ID == "" {
+		WriteJSON(w, map[string]string{"error": "id is required"}, http.StatusBadRequest)
 		return
 	}
 
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "title is required"})
+		WriteJSON(w, map[string]string{"error": "title is required"}, http.StatusBadRequest)
 		return
 	}
 
-	// Проверка и коррекция даты (как в addTaskHandler)
-	if err := checkDate(&task); err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+	if err := checkDate(&task); err != nil { // ← без параметра now
+		WriteJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	if err := db.UpdateTask(&task); err != nil {
-		writeJSON(w, map[string]string{"error": "task not found"})
+		WriteJSON(w, map[string]string{"error": "failed to update task"}, http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем пустой JSON {}
-	writeJSON(w, map[string]interface{}{})
+	WriteJSON(w, map[string]interface{}{}, http.StatusOK)
 }

@@ -32,7 +32,7 @@ func checkDate(task *db.Task) error {
 		return errors.New("invalid date format")
 	}
 
-	if !t.After(now) {
+	if t.Format(dateFormat) < nowStr {
 		if task.Repeat == "" {
 			task.Date = nowStr
 		} else {

@@ -73,7 +73,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if len(parts) != 1 {
 			return "", errors.New("invalid 'y' format")
 		}
-		next := start
+		next := start.AddDate(1, 0, 0)
 		for !next.After(now) {
 			next = next.AddDate(1, 0, 0)
 		}
@@ -87,7 +87,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if err != nil || days <= 0 || days > 400 {
 			return "", errors.New("invalid day interval")
 		}
-		next := start
+		next := start.AddDate(0, 0, days)
 		for !next.After(now) {
 			next = next.AddDate(0, 0, days)
 		}

@@ -7,28 +7,19 @@ import (
 )
 
 func Init() {
-	http.HandleFunc("/api/nextdate", nextDateHandler)
-	http.HandleFunc("/api/task", taskHandler)
-	http.HandleFunc("/api/tasks", tasksHandler)
-	http.HandleFunc("/api/donetask", doneTaskHandler)
-	http.HandleFunc("/api/gettask", getTaskHandler)
-	http.HandleFunc("/api/updatetask", updateTaskHandler)
-	http.HandleFunc("/api/deletetask", deleteTaskHandler)
-}
+	http.HandleFunc("GET /api/tasks", tasksHandler)
 
-func taskHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		getTaskHandler(w, r)
-	case http.MethodPost:
-		addTaskHandler(w, r)
-	case http.MethodPut:
-		updateTaskHandler(w, r)
-	case http.MethodDelete:
-		deleteTaskHandler(w, r)
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
+	http.HandleFunc("POST /api/task/done", doneTaskHandler)
+
+	http.HandleFunc("GET /api/task", getTaskHandler)
+
+	http.HandleFunc("POST /api/task", addTaskHandler)
+
+	http.HandleFunc("PUT /api/task", updateTaskHandler)
+
+	http.HandleFunc("DELETE /api/task", deleteTaskHandler)
+
+	http.HandleFunc("/api/nextdate", nextDateHandler)
 }
 
 func WriteJSON(w http.ResponseWriter, data interface{}, statusCode int) {
